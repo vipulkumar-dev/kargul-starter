@@ -146,12 +146,13 @@ const LazyLottie: React.FC<LazyLottieProps> = ({
         ref={containerRef}
         className={cn("flex items-center justify-center", className)}
       >
-        {loading ||
-          (poster ? (
-            <Image src={poster} alt={posterAlt} fill={posterFill} />
-          ) : (
-            <div className="animate-pulse rounded bg-gray-200" />
-          ))}
+        {loading ? (
+          loading
+        ) : poster ? (
+          <Image src={poster} alt={posterAlt} fill={posterFill} />
+        ) : (
+          <div className="animate-pulse rounded bg-gray-200" />
+        )}
       </div>
     );
   }

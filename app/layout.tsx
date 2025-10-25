@@ -8,8 +8,8 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Sideshift",
-  description: "Sideshift - The UGC Engine for Creators & Brands.",
+  title: "Next.js",
+  description: "Next.js - The React Framework for the Web.",
 };
 
 export default function RootLayout({

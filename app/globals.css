@@ -150,9 +150,23 @@
     @apply bg-background text-foreground font-medium;
   }
 
+  p,
+  .p-style {
+    @apply text-[14px] leading-[120%] tracking-[-0.01em] md:text-[16px];
+  }
+  h1,
+  .h1-style {
+    @apply text-[min(40px,10vw)] leading-[96%] sm:text-[48px] md:text-[70px];
+  }
+
   h2,
   .h2-style {
-    @apply text-[32px] leading-[96%] font-bold tracking-[-0.05em] sm:text-[48px] md:text-[52px];
+    @apply text-[min(36px,8vw)] sm:text-[48px] md:text-[56px];
+  }
+
+  h3,
+  .h3-style {
+    @apply text-[min(17.5px,4.85vw)] sm:text-[20px] md:text-[20px];
   }
 
   h1,
@@ -175,127 +189,6 @@ body {
 }
 
 @layer components {
-  .metrics-card {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(1, 65, 99, 0.05) 0%,
-        rgba(1, 65, 99, 0) 59.26%
-      ),
-      linear-gradient(
-        0deg,
-        rgba(240, 250, 255, 0.6) 0%,
-        rgba(240, 250, 255, 0.6) 100%
-      ),
-      #fff;
-    box-shadow:
-      20px 36px 14px 0 rgba(1, 65, 99, 0),
-      10px 7px 6px 0 rgba(1, 65, 99, 0.02),
-      4.5px 3.5px 4px 0 rgba(1, 65, 99, 0.03),
-      1.2px 1.5px 4.5px 0 rgba(1, 65, 99, 0.02);
-  }
-
-  .workflow-placeholder {
-    background: #b5b5b5;
-  }
-
-  .platform-feature-card {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(1, 65, 99, 0.06) 0%,
-        rgba(1, 65, 99, 0) 59.26%
-      ),
-      linear-gradient(0deg, #fff 0%, #fff 100%), #fff;
-    box-shadow:
-      20px 18px 7px 0 rgba(1, 65, 99, 0),
-      2px 2px 2px 0 rgba(1, 65, 99, 0.03),
-      1px 1px 2px 0 rgba(1, 65, 99, 0.02);
-  }
-
-  .cta-button-dark {
-    /* background: linear-gradient(0deg, #202020 0%, #515151 100%);
-    box-shadow:
-      inset 0 0 1.054px 3.163px #494949,
-      inset 0 6.325px 5.271px rgba(0, 0, 0, 0.55),
-      0 0 29.517px rgba(1, 65, 99, 0),
-      0 0 27.409px rgba(1, 65, 99, 0.01),
-      0 0 23.192px rgba(1, 65, 99, 0.05),
-      0 0 16.867px rgba(1, 65, 99, 0.09),
-      0 0 9.488px rgba(1, 65, 99, 0.1); */
-    text-shadow: 0 -1.054px 0 rgba(0, 0, 0, 0.5);
-    background:
-      url(/noise.png), linear-gradient(0deg, #202020 0%, #515151 100%);
-    box-shadow:
-      37.9507px 56.926px 27.4088px rgba(1, 65, 99, 0.01),
-      21.0837px 31.6256px 23.1921px rgba(1, 65, 99, 0.05),
-      9.48767px 13.7044px 16.867px rgba(1, 65, 99, 0.09),
-      2.10837px 3.16256px 9.48767px rgba(1, 65, 99, 0.1),
-      inset 0px 0px 1.05419px 3.16256px #494949,
-      inset 0px 6.32511px 5.27093px rgba(0, 0, 0, 0.55);
-  }
-
-  .cta-button-light {
-    background-clip: padding-box;
-    background:
-      linear-gradient(
-        180deg,
-        rgba(1, 65, 99, 0.05) 0%,
-        rgba(1, 65, 99, 0.001) 59.26%
-      ),
-      linear-gradient(0deg, #ffffff, #ffffff),
-      linear-gradient(0deg, #ffffff, #ffffff),
-      linear-gradient(
-        180deg,
-        rgba(1, 65, 99, 0.05) 0%,
-        rgba(1, 65, 99, 0.001) 59.26%
-      ),
-      linear-gradient(0deg, rgba(240, 250, 255, 0.6), rgba(240, 250, 255, 0.6)),
-      #ffffff;
-
-    box-shadow:
-      37.9507px 56.926px 27.4088px rgba(1, 65, 99, 0.01),
-      21.0837px 31.6256px 23.1921px rgba(1, 65, 99, 0.05),
-      9.48767px 13.7044px 16.867px rgba(1, 65, 99, 0.09),
-      2.10837px 3.16256px 9.48767px rgba(1, 65, 99, 0.1);
-  }
-
-  .cta-button-light span {
-    background: linear-gradient(0deg, #202020 0%, #515151 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  /* Swiper Custom Styles */
-  .testimonials-swiper {
-    @apply w-full;
-  }
-
-  .testimonials-swiper .swiper-slide {
-    @apply h-auto;
-  }
-
-  .testimonials-swiper .swiper-pagination {
-    @apply relative mt-0 flex justify-center;
-  }
-
-  .testimonials-swiper .swiper-pagination-bullet {
-    @apply h-2 w-2 bg-gray-300 opacity-100 transition-all duration-300;
-  }
-
-  .testimonials-swiper .swiper-pagination-bullet-active {
-    @apply scale-125 bg-blue-500;
-  }
-
-  .testimonials-swiper .swiper-button-next,
-  .testimonials-swiper .swiper-button-prev {
-    @apply relative top-0 mt-0 h-12 w-12;
-  }
-
-  .testimonials-swiper .swiper-button-disabled {
-    @apply cursor-not-allowed opacity-50;
-  }
 }
 
 header.active {
@@ -331,27 +224,4 @@ header.active .header_bg {
 
 header.menu-hidden {
   transform: translateY(-100%);
-}
-
-/* Testimonials Marquee Animation */
-@keyframes marquee-scroll {
-  from {
-    transform: translateX(0%);
-  }
-  to {
-    transform: translateX(-100%);
-  }
-}
-
-.marquee-scroll {
-  animation: marquee-scroll 40s linear infinite;
-}
-
-.testimonial-wpr {
-  animation: marquee-scroll 60s linear infinite;
-}
-
-.marquee-container:hover .marquee-scroll,
-.marquee-container:hover .testimonial-wpr {
-  animation-play-state: paused;
 }

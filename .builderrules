@@ -1,4 +1,4 @@
 1. use the section sturcture that is used in ExampleSection.tsx file.
-2. make sure you don't any extra styles to h1 h2 h3 because i have already made them global.css
-3. body has also some default style so don't add font classes untils its important
+2. make sure you don't any extra font styles to p, h1, h2 ,h3 because i have already made them global.css
+3. please use button component whenever there is a button
 
