@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const interDisplay = localFont({
+  src: "../fonts/InterDisplay-Medium.woff2",
+  variable: "--font-inter-display",
+});
+
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -20,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} relative z-0 flex min-h-screen flex-col font-sans antialiased`}
+        className={`${interDisplay.variable} ${inter.variable} relative z-0 flex min-h-screen flex-col font-sans antialiased`}
       >
         {children}
       </body>
