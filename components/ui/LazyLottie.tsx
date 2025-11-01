@@ -1,195 +1,220 @@
 "use client";
-
-import React, { useRef, useEffect, useState, useCallback } from "react";
-import Lottie, { LottieRefCurrentProps } from "lottie-react";
-import lottie from "lottie-web"; // import the underlying lottie-web
-import Image from "next/image";
+import * as React from "react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
-interface LazyLottieProps {
-  poster?: string;
-  posterAlt?: string;
-  posterFill?: boolean;
-  rootMargin?: string;
-  threshold?: number;
-  fallback?: React.ReactNode;
-  loading?: React.ReactNode;
+interface VideoProps {
+  src: string;
+  mobileSrc?: string;
   className?: string;
-  // All other props passed to Lottie component
-  [key: string]: unknown;
+  poster?: string;
+
+  onLoadStart?: () => void;
+  onLoadedData?: () => void;
+  onError?: () => void;
 }
 
-const LazyLottie: React.FC<LazyLottieProps> = ({
-  poster,
-  posterAlt = "Loading animation",
-  posterFill = true,
-  rootMargin = "50px",
-  threshold = 0.1,
-  fallback,
-  loading,
+function Video({
+  src,
+  mobileSrc,
   className,
-  ...lottieProps
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const lottieRef = useRef<LottieRefCurrentProps | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  poster,
+  onLoadStart,
+  onLoadedData,
+  onError,
+  ...props
+}: VideoProps) {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isLowPowerMode, setIsLowPowerMode] = React.useState(false);
 
-  const [isPageLoaded, setIsPageLoaded] = useState(false);
-  const [isLottieReady, setIsLottieReady] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [animationDataState, setAnimationDataState] = useState<object | null>(
-    null,
+  // Helper function to clear all video sources
+  const clearAllVideoSources = React.useCallback((video: HTMLVideoElement) => {
+    // Remove src attribute from video element
+    video.removeAttribute("src");
+    // Clear all source elements
+    const sources = video.querySelectorAll("source");
+    sources.forEach((source) => {
+      source.removeAttribute("src");
+    });
+
+    // Trigger load to release resources
+    video.load();
+  }, []);
+
+  // Helper function to restore video sources
+  const restoreVideoSources = React.useCallback(
+    (video: HTMLVideoElement) => {
+      if (!video.dataset.originalSources) return;
+
+      const sourcesData = JSON.parse(video.dataset.originalSources);
+      const sources = video.querySelectorAll("source");
+
+      sources.forEach((source, index) => {
+        if (sourcesData[index]) {
+          source.src = sourcesData[index].src;
+          source.type = sourcesData[index].type;
+          if (sourcesData[index].media) {
+            source.media = sourcesData[index].media;
+          }
+        }
+      });
+
+      // Reload the video with new sources
+      video.load();
+
+      // Wait for the video to be ready before playing
+      const onLoaded = () => {
+        video.play().catch((err) => {
+          console.log("Error playing video:", err);
+          // If autoplay fails, remove the sources
+          clearAllVideoSources(video);
+        });
+        video.removeEventListener("loadeddata", onLoaded);
+      };
+
+      video.addEventListener("loadeddata", onLoaded);
+    },
+    [clearAllVideoSources],
   );
 
-  // Set global quality once
-  useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      lottie &&
-      typeof lottie.setQuality === "function"
-    ) {
-      // Choose “low”, “medium”, “high” or a number > 1
-      lottie.setQuality("low");
+  // Set up intersection observer for video play/pause
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
 
-      // If you prefer medium:
-      // lottie.setQuality("medium");
-      // Or a numeric factor:
-      // lottie.setQuality(2);
-    }
-  }, []);
+    video.muted = true;
 
-  // Wait for full page load
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (document.readyState === "complete") {
-      setIsPageLoaded(true);
-    } else {
-      const onLoad = () => {
-        setIsPageLoaded(true);
-      };
-      window.addEventListener("load", onLoad);
-      return () => window.removeEventListener("load", onLoad);
-    }
-  }, []);
-
-  // Load the animation JSON when conditions are met
-  const loadAnimationData = useCallback(async () => {
-    if (!isPageLoaded) return;
-
-    // If animationData is passed as prop, use it directly
-    if (lottieProps.animationData) {
-      setAnimationDataState(lottieProps.animationData as object);
-      setIsLottieReady(true);
-      return;
+    // Store original sources for restoration
+    if (!video.dataset.originalSources) {
+      const sources = video.querySelectorAll("source");
+      const sourcesData = Array.from(sources).map((source) => ({
+        src: source.src,
+        type: source.type,
+        media: source.media || "",
+      }));
+      video.dataset.originalSources = JSON.stringify(sourcesData);
     }
 
-    // Otherwise, fetch from path
-    if (lottieProps.path && typeof lottieProps.path === "string") {
-      try {
-        const resp = await fetch(lottieProps.path as string);
-        if (!resp.ok) {
-          throw new Error(`Failed to load animation: ${resp.status}`);
+    // Handle autoplay failure and detect low power mode
+    const handleAutoplayFailure = () => {
+      console.log("Autoplay failed, removing video sources");
+      clearAllVideoSources(video);
+    };
+
+    // Add event listener for autoplay failure
+    video.addEventListener("error", handleAutoplayFailure);
+
+    // Override play() to detect low power mode (NotAllowedError)
+    const originalPlay = video.play;
+    video.play = function () {
+      return originalPlay.call(this).catch((error) => {
+        // NotAllowedError indicates low power mode on iOS
+        if (error instanceof Error && error.name === "NotAllowedError") {
+          console.log("Low Power Mode detected - showing poster image");
+          setIsLowPowerMode(true);
+          clearAllVideoSources(video);
+        } else {
+          console.log("Play promise rejected:", error);
+          handleAutoplayFailure();
         }
-        const data = await resp.json();
-        setAnimationDataState(data);
-        setIsLottieReady(true);
-      } catch (err) {
-        console.error("Error loading Lottie animation:", err);
-        setHasError(true);
-        if (typeof lottieProps.onError === "function") {
-          (lottieProps.onError as (e: unknown) => void)(err);
+        // Don't throw - prevent error bubbling
+        return Promise.resolve();
+      });
+    };
+
+    // Also check on initial load when autoplay tries to play
+    const checkInitialAutoplay = () => {
+      if (video.readyState >= 2) {
+        // Video is ready, try to detect low power mode
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            if (error instanceof Error && error.name === "NotAllowedError") {
+              console.log("Low Power Mode detected on initial load");
+              setIsLowPowerMode(true);
+              clearAllVideoSources(video);
+            }
+          });
         }
       }
-    }
-  }, [isPageLoaded, lottieProps]);
+    };
 
-  const handleLottieLoaded = useCallback(() => {
-    setIsLottieReady(true);
-  }, []);
+    // Check after video can play
+    const onCanPlay = () => {
+      checkInitialAutoplay();
+      video.removeEventListener("canplay", onCanPlay);
+    };
+    video.addEventListener("canplay", onCanPlay);
 
-  // Observe intersection to play / pause
-  useEffect(() => {
-    if (!isLottieReady || !lottieRef.current || !containerRef.current) return;
-
-    observerRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          // Skip if low power mode is detected
+          if (isLowPowerMode) return;
+
           if (entry.isIntersecting) {
-            lottieRef.current?.play();
+            // Video is in view - restore sources and auto-play after load
+            console.log("play");
+            restoreVideoSources(video);
           } else {
-            lottieRef.current?.pause();
+            // Video is out of view - pause and clean sources
+            console.log("pause");
+            video.pause();
+            clearAllVideoSources(video);
           }
         });
       },
-      { rootMargin, threshold },
+      { threshold: 0, rootMargin: "200px" },
     );
 
-    observerRef.current.observe(containerRef.current);
+    observer.observe(video);
 
+    // Cleanup observer on unmount
     return () => {
-      observerRef.current?.disconnect();
+      observer.disconnect();
+      video.removeEventListener("error", handleAutoplayFailure);
     };
-  }, [isLottieReady, rootMargin, threshold]);
+  }, [clearAllVideoSources, restoreVideoSources, isLowPowerMode]);
 
-  // Trigger load when page loaded
-  useEffect(() => {
-    if (isPageLoaded && !isLottieReady) {
-      loadAnimationData();
-    }
-  }, [isPageLoaded, isLottieReady, loadAnimationData]);
-
-  // Before both page load & animation fetched: show placeholder / poster
-  if (!isPageLoaded || !isLottieReady) {
+  // If low power mode is detected, show poster image instead
+  if (isLowPowerMode && poster) {
     return (
-      <div
-        ref={containerRef}
-        className={cn("flex items-center justify-center", className)}
-      >
-        {loading ? (
-          loading
-        ) : poster ? (
-          <Image src={poster} alt={posterAlt} fill={posterFill} />
-        ) : (
-          <div className="animate-pulse rounded bg-gray-200" />
-        )}
-      </div>
-    );
-  }
-
-  if (hasError) {
-    return (
-      <div
-        ref={containerRef}
-        className={cn("flex items-center justify-center", className)}
-      >
-        {fallback || (
-          <div className="text-red-500">Failed to load animation</div>
-        )}
-      </div>
+      <Image
+        src={poster}
+        alt=""
+        width={0}
+        height={0}
+        sizes="100vw"
+        className={cn("absolute object-cover", className)}
+        {...props}
+      />
     );
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={cn("lazy-lottie-container", className)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+    <video
+      ref={videoRef}
+      autoPlay
+      loop
+      muted
+      playsInline
+      preload="none"
+      poster={poster}
+      className={cn("auto_video absolute object-cover", className)}
+      onLoadStart={onLoadStart}
+      onLoadedData={onLoadedData}
+      onError={onError}
+      {...props}
     >
-      {animationDataState && (
-        <Lottie
-          lottieRef={lottieRef}
-          animationData={animationDataState}
-          onLoad={handleLottieLoaded}
-          {...lottieProps}
-        />
-      )}
-    </div>
+      <source src={src} type="video/webm" media="(min-width: 768px)" />
+      <source
+        src={mobileSrc || src}
+        type="video/webm"
+        media="(max-width: 769px)"
+      />
+      Your browser does not support the video tag.
+    </video>
   );
-};
+}
 
-export default LazyLottie;
+export default Video;
