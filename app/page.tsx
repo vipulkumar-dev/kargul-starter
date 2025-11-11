@@ -3,7 +3,7 @@
 export default function Home() {
   return (
     <>
-      <main>{/* other code */}</main>
+      <main className="max-w-full overflow-x-clip">{/* other code */}</main>
     </>
   );
 }

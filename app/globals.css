@@ -183,8 +183,6 @@
 
 html,
 body {
-  max-width: 100%;
-  overflow-x: clip;
   scroll-behavior: smooth;
   scroll-padding: 200px 0;
 }

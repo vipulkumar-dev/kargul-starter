@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface VideoProps {
   src: string;
@@ -18,19 +19,18 @@ function Video({
   mobileSrc,
   className,
   poster,
-
   onLoadStart,
   onLoadedData,
   onError,
   ...props
 }: VideoProps) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isLowPowerMode, setIsLowPowerMode] = React.useState(false);
 
   // Helper function to clear all video sources
   const clearAllVideoSources = React.useCallback((video: HTMLVideoElement) => {
     // Remove src attribute from video element
     video.removeAttribute("src");
-
     // Clear all source elements
     const sources = video.querySelectorAll("source");
     sources.forEach((source) => {
@@ -95,7 +95,7 @@ function Video({
       video.dataset.originalSources = JSON.stringify(sourcesData);
     }
 
-    // Handle autoplay failure
+    // Handle autoplay failure and detect low power mode
     const handleAutoplayFailure = () => {
       console.log("Autoplay failed, removing video sources");
       clearAllVideoSources(video);
@@ -104,26 +104,59 @@ function Video({
     // Add event listener for autoplay failure
     video.addEventListener("error", handleAutoplayFailure);
 
-    // Also check if play() promise is rejected
+    // Override play() to detect low power mode (NotAllowedError)
     const originalPlay = video.play;
     video.play = function () {
       return originalPlay.call(this).catch((error) => {
-        console.log("Play promise rejected:", error);
-        handleAutoplayFailure();
-        throw error;
+        // NotAllowedError indicates low power mode on iOS
+        if (error instanceof Error && error.name === "NotAllowedError") {
+          console.log("Low Power Mode detected - showing poster image");
+          setIsLowPowerMode(true);
+          clearAllVideoSources(video);
+        } else {
+          console.log("Play promise rejected:", error);
+          handleAutoplayFailure();
+        }
+        // Don't throw - prevent error bubbling
+        return Promise.resolve();
       });
     };
+
+    // Also check on initial load when autoplay tries to play
+    const checkInitialAutoplay = () => {
+      if (video.readyState >= 2) {
+        // Video is ready, try to detect low power mode
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            if (error instanceof Error && error.name === "NotAllowedError") {
+              console.log("Low Power Mode detected on initial load");
+              setIsLowPowerMode(true);
+              clearAllVideoSources(video);
+            }
+          });
+        }
+      }
+    };
+
+    // Check after video can play
+    const onCanPlay = () => {
+      checkInitialAutoplay();
+      video.removeEventListener("canplay", onCanPlay);
+    };
+    video.addEventListener("canplay", onCanPlay);
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          // Skip if low power mode is detected
+          if (isLowPowerMode) return;
+
           if (entry.isIntersecting) {
             // Video is in view - restore sources and auto-play after load
-            console.log("play");
             restoreVideoSources(video);
           } else {
             // Video is out of view - pause and clean sources
-            console.log("pause");
             video.pause();
             clearAllVideoSources(video);
           }
@@ -139,7 +172,22 @@ function Video({
       observer.disconnect();
       video.removeEventListener("error", handleAutoplayFailure);
     };
-  }, [clearAllVideoSources, restoreVideoSources]);
+  }, [clearAllVideoSources, restoreVideoSources, isLowPowerMode]);
+
+  // If low power mode is detected, show poster image instead
+  if (isLowPowerMode && poster) {
+    return (
+      <Image
+        src={poster}
+        alt=""
+        width={0}
+        height={0}
+        sizes="100vw"
+        className={cn("absolute object-cover", className)}
+        {...props}
+      />
+    );
+  }
 
   return (
     <video
@@ -150,7 +198,10 @@ function Video({
       playsInline
       preload="none"
       poster={poster}
-      className={cn("auto_video absolute object-cover", className)}
+      className={cn(
+        "auto_video absolute mask-[linear-gradient(#000_1px,#000_calc(100%-1px))] object-cover [-webkit-mask-image:linear-gradient(#000_1px,#000_calc(100%-1px))]",
+        className,
+      )}
       onLoadStart={onLoadStart}
       onLoadedData={onLoadedData}
       onError={onError}
