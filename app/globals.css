@@ -151,10 +151,6 @@
     @apply bg-background text-foreground font-medium;
   }
 
-  p,
-  .p-style {
-    @apply text-[14px] leading-[120%] tracking-[-0.01em] md:text-[16px];
-  }
   h1,
   .h1-style {
     @apply text-[min(40px,10vw)] leading-[96%] sm:text-[48px] md:text-[70px];
@@ -177,8 +173,13 @@
   h5,
   h6,
   h3 span {
-    @apply bg-[url('/noise.png'),linear-gradient(0deg,#202020_0%,#515151_100%)] bg-clip-text pb-[0.06em] leading-[0.9230769230769231] font-bold tracking-[-0.03em] text-transparent;
+    @apply leading-[0.9230769230769231] font-bold tracking-[-0.03em];
   }
+}
+
+p,
+.p-style {
+  @apply text-[14px] leading-[120%] tracking-[-0.01em] md:text-[16px];
 }
 
 html,
