@@ -7,13 +7,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "cta-button-dark border border-[#202020] text-white",
-        secondary: "cta-button-light border-2 border-white",
+        primary: "border border-[#202020] text-white",
+        secondary: "border-2 border-white",
       },
       size: {
-        sm: "px-2.5 py-1.5 md:px-4 md:py-2 text-[13px] md:text-[16px]",
-        md: "px-4 py-2.5 md:px-6 md:py-3 text-[14px] md:text-base",
-        lg: "px-[16px] md:px-6 py-[12px] md:py-4 text-[15px] sm:text-lg",
+        sm: "px-2 py-1 sm:px-4 sm:py-2 text-[13px] sm:text-[14px]",
+        md: "px-2 py-1 sm:px-4 sm:py-2 text-[14px] sm:text-base",
+        lg: "px-2 py-1 sm:px-4 sm:py-2 text-[15px] sm:text-lg",
       },
     },
     defaultVariants: {
