@@ -183,3 +183,15 @@
 
 @layer components {
 }
+
+@media (max-width: 340px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 300px) {
+  html {
+    font-size: 12px;
+  }
+}
