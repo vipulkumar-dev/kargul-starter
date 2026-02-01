@@ -7,8 +7,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "border border-[#202020] text-white",
-        secondary: "border-2 border-white",
+        primary: "border border-[#202020] bg-[#202020] text-white",
+        secondary: "border-2 border-[#202020]",
       },
       size: {
         sm: "px-2 py-1 sm:px-4 sm:py-2 text-[13px] sm:text-[14px]",
