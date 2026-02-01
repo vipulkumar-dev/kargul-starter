@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "tailwind-scrollbar";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -85,24 +86,6 @@
   --padding-global: 1rem;
   --padding-section-md: 2rem;
 }
-@variant sm {
-  :root {
-    --padding-global: 2rem;
-    --padding-section-md: 2rem;
-  }
-}
-@variant md {
-  :root {
-    --padding-global: 2.5rem;
-    --padding-section-md: 2.25rem;
-  }
-}
-@variant lg {
-  :root {
-    --padding-global: max(4vw, 2.5rem);
-    --padding-section-md: 3.25rem;
-  }
-}
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -135,6 +118,25 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+@variant sm {
+  :root {
+    --padding-global: 2rem;
+    --padding-section-md: 2rem;
+  }
+}
+@variant md {
+  :root {
+    --padding-global: 2.5rem;
+    --padding-section-md: 2.25rem;
+  }
+}
+@variant lg {
+  :root {
+    --padding-global: max(4vw, 2.5rem);
+    --padding-section-md: 3.25rem;
+  }
 }
 
 @layer base {
