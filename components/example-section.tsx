@@ -15,6 +15,7 @@ function ExampleSection() {
               neque laboriosam id harum consequatur quidem dolorem aperiam sit
             </p>
           </div>
+
           {/* always use button component whenever there is a button */}
           <Button variant="primary" size="md">
             Book a Demo

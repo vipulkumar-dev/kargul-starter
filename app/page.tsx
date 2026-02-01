@@ -2,11 +2,10 @@
 
 import ExampleSection from "@/components/example-section";
 
-
 export default function Home() {
   return (
     <>
-      <main className="max-w-full overflow-x-clip max-h-screen">
+      <main className="max-h-screen max-w-full overflow-x-clip">
         <ExampleSection />
       </main>
     </>
