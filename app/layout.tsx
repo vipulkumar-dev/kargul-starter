@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${interDisplay.variable} ${inter.variable} relative z-0 flex min-h-screen flex-col font-sans antialiased`}
+        className={`${interDisplay.variable} ${inter.variable} relative z-0 font-sans antialiased`}
       >
         {children}
       </body>

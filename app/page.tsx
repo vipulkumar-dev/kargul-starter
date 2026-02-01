@@ -1,10 +1,12 @@
 "use client";
-import ExampleSection from "@/components/ExampleSection";
+
+import ExampleSection from "@/components/example-section";
+
 
 export default function Home() {
   return (
     <>
-      <main className="max-w-full overflow-x-clip">
+      <main className="max-w-full overflow-x-clip max-h-screen">
         <ExampleSection />
       </main>
     </>
