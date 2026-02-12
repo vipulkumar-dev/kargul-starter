@@ -3,7 +3,8 @@ import Button from "@/components/ui/button";
 import { useExampleStore } from "@/stores/example-store";
 
 function ExampleSection() {
-  const { lastClickedCta, ctaClickCount, setLastClickedCta } = useExampleStore();
+  const { lastClickedCta, ctaClickCount, setLastClickedCta } =
+    useExampleStore();
 
   return (
     // use section name for id
