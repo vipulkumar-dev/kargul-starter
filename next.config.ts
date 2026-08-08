@@ -3,27 +3,26 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    unoptimized: true,
-    domains: ["api.builder.io"],
-  },
-  webpack(config) {
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: [
-        {
-          loader: "@svgr/webpack",
-          options: {
-            icon: true,
-          },
-        },
-      ],
-    });
-    return config;
+    // unoptimized: true,
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "api.builder.io",
+      },
+    ],
   },
   turbopack: {
     rules: {
       "*.svg": {
-        loaders: ["@svgr/webpack"],
+        loaders: [
+          {
+            loader: "@svgr/webpack",
+            options: {
+              icon: true,
+            },
+          },
+        ],
         as: "*.js",
       },
     },
