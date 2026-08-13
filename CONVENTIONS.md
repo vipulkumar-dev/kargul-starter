@@ -36,21 +36,52 @@ p,
 
 ## 2. Folder structure
 
+### Pages
+
+A `page.tsx` only composes sections — no markup, no layout classes, no logic beyond the `main` wrapper.
+
+```tsx
+import Hero from "@/components/home/hero/hero";
+import About from "@/components/home/about/about";
+import Services from "@/components/home/services/services";
+import Projects from "@/components/home/projects/projects";
+import Testimonials from "@/components/home/testimonials/testimonials";
+import Contact from "@/components/home/contact/contact";
+
+export default function Home() {
+  return (
+    <main className="max-h-screen max-w-full overflow-x-clip">
+      <Hero />
+      <About />
+      <Services />
+      <Projects />
+      <Testimonials />
+      <Contact />
+    </main>
+  );
+}
+```
+
 ### Components
 
-Mirror the site: page → section → component.
+Mirror the site: page → section → component. Each section gets its own folder, and the section's **main file is named after the section and lives inside that folder** — it's the component the page imports. Everything that section needs sits next to it.
 
 ```
 components/
   home/
     hero/
+      hero.tsx
       hero-marquee.tsx
-    pricing/
-      pricing-card.tsx
+    projects/
+      projects.tsx
+      project-card.tsx
   about/
     team/
+      team.tsx
       team-member.tsx
 ```
+
+Sections are only imported by their page. If a section's sub-component is needed on another page, it moves to `_common/`.
 
 Anything reused across more than one page or section moves to `_common/`. Low-level primitives live in `_ui/`.
 
@@ -120,7 +151,7 @@ The one exception: **a video's poster image lives next to the video**, in the vi
 ## 3. Section structure
 
 Every section follows the same nesting: `section` → padding wrapper → max-width wrapper → content.
-Use the section's name as the `id`.
+Use the section's name as the `id`. The file lives at `components/<page>/<section>/<section>.tsx` per rule 2 and is default-exported for the page to import.
 
 ```tsx
 import React from "react";
