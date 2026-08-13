@@ -319,11 +319,72 @@ How SVG handling behaves in this project:
 - Files live in `public/assets/images/…` per rule 2.
 - Decorative SVGs get `alt=""` on `<Image />`, or `aria-hidden` when inline.
 
-## 11. No comments
+## 11. Easing
+
+GSAP's power eases are defined once and available to both CSS and Framer Motion. **Never hardcode a `cubic-bezier()` or a raw bezier array in a component.**
+
+### Which curve to use
+
+**Default to `power3` in-out for every animation** — `ease-power3-in-out` / `ease.power3InOut`. Use it unless the element is entering or leaving, in which case the direction decides:
+
+| The animation                                                              | Use           |
+| -------------------------------------------------------------------------- | ------------- |
+| Anything already on screen — hover, toggle, layout shift, colour, movement | `power3InOut` |
+| Entering — reveal on scroll, fade up from `opacity: 0`, modal opening      | `power3Out`   |
+| Leaving — fade out, modal closing, item removed                            | `power3In`    |
+
+The reason: an in-out curve starts and ends at zero speed, which is right for something that begins and ends on screen, but wrong for an entrance — it makes the element crawl at the start while it's still invisible. An entrance should arrive fast and settle, which is **out**. An exit should do the reverse, starting slow and accelerating away, which is **in**.
+
+So a scroll reveal from `opacity: 0` uses `power3Out`, not the in-out default.
+
+```tsx
+<motion.div
+  initial={{ opacity: 0, y: 24 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true }}
+  transition={{ duration: 0.6, ease: ease.power3Out }}
+/>
+```
+
+```tsx
+<div className="ease-power3-in-out transition-colors duration-300 hover:bg-black" />
+```
+
+Reach for another power level only when `power3` is visibly wrong for that specific motion — `power1`/`power2` for small, quick UI moves, `power4` for long dramatic ones.
+
+Tailwind — utilities come from the `@theme static` block in `app/globals.css`:
+
+```tsx
+<div className="ease-power3-in-out transition-transform duration-500 hover:scale-105" />
+```
+
+Framer Motion — the same curves as tuples from `lib/easings.ts`:
+
+```tsx
+import { motion } from "motion/react";
+import { ease } from "@/lib/easings";
+
+<motion.div
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.6, ease: ease.power3Out }}
+/>;
+```
+
+| GSAP       | Curve | Tailwind                                                    | `lib/easings.ts`                         |
+| ---------- | ----- | ----------------------------------------------------------- | ---------------------------------------- |
+| `power1.*` | quad  | `ease-power1-in` / `ease-power1-out` / `ease-power1-in-out` | `power1In` / `power1Out` / `power1InOut` |
+| `power2.*` | cubic | `ease-power2-in` / `ease-power2-out` / `ease-power2-in-out` | `power2In` / `power2Out` / `power2InOut` |
+| `power3.*` | quart | `ease-power3-in` / `ease-power3-out` / `ease-power3-in-out` | `power3In` / `power3Out` / `power3InOut` |
+| `power4.*` | quint | `ease-power4-in` / `ease-power4-out` / `ease-power4-in-out` | `power4In` / `power4Out` / `power4InOut` |
+
+- The `@theme` block is `static`, so all twelve `--ease-power*` variables are always emitted to `:root` — usable in arbitrary values (`[transition-timing-function:var(--ease-power2-out)]`) and inline `animate` styles, not just via the utilities.
+- Adding a curve means adding it in **both** places, with the same numbers, so CSS and Motion stay in sync.
+
+## 12. No comments
 
 Do not add comments of any kind to the code — no `//`, no `/* */`, no JSX `{/* */}`. Code should read on its own.
 
-## 12. Figma layer-name directives
+## 13. Figma layer-name directives
 
 Layer names in Figma carry build instructions inside double square brackets. Read them and act on them — the bracketed token is an instruction, not part of the layer's content, so never render it as text or use it in a class name or `id`.
 
