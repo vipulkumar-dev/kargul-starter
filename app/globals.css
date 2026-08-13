@@ -186,6 +186,14 @@
 @layer components {
 }
 
+.pswp .pswp__button--arrow--next .pswp__icn {
+  transform: none;
+}
+
+.pswp .pswp__icn-shadow {
+  display: none;
+}
+
 @media (max-width: 340px) {
   html {
     font-size: 14px;

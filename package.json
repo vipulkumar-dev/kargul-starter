@@ -16,6 +16,7 @@
     "lucide-react": "^0.544.0",
     "motion": "^12.23.22",
     "next": "^16.3.0",
+    "photoswipe": "^5.4.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-use-measure": "^2.1.7",
