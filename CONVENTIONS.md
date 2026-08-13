@@ -215,7 +215,7 @@ Use Tailwind utilities for everything. No inline `style` objects, no CSS modules
 
 ## 8. Use `divide` for stacked borders
 
-For lists or stacks that need separators between items, use Tailwind's `divide-*` utilities instead of putting a border on each child.
+For one-dimensional lists or stacks that need separators between items, use Tailwind's `divide-*` utilities instead of putting a border on each child. For two-dimensional grids, use rule 9 instead — `divide-*` can't handle wrapping columns.
 
 ```tsx
 <div className="divide-border flex flex-col divide-y">
@@ -224,11 +224,75 @@ For lists or stacks that need separators between items, use Tailwind's `divide-*
 </div>
 ```
 
-## 9. No comments
+## 9. Grid borders
+
+How to draw 1px dividing lines between grid items.
+
+**Never** use `nth-child` math to add or strip borders per position. It has to be rewritten at every breakpoint and silently breaks when the column count changes. Use one of the two patterns below.
+
+### Pattern A — square corners
+
+```tsx
+<div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-px p-px">
+  <div className="outline-border p-6 outline-1">Cell</div>
+  <div className="outline-border p-6 outline-1">Cell</div>
+  <div className="outline-border p-6 outline-1">Cell</div>
+</div>
+```
+
+**Why it works.** `outline` is drawn outside the box and does not affect layout. With `gap-px`, two neighbouring cells each paint their outline into the _same_ 1px strip, so the lines overlap instead of stacking into 2px. The `p-px` on the grid leaves room for the outlines on the outer edge, which gives you the frame for free.
+
+**Column count is irrelevant.** Every cell gets the same single declaration, so 1 column, 2, 3 or 4 all render correctly with no breakpoint variants.
+
+**Incomplete last row** is just empty grid space — no cell, no outline, nothing drawn. This is the whole point of the pattern.
+
+### Pattern B — rounded wrapper corners
+
+Outlines are always square, so they cannot supply the frame when the container is rounded — the clip eats the line along each arc and leaves four gaps at the corners. Move the frame onto the wrapper.
+
+```tsx
+<div className="border-border overflow-hidden rounded-xl border">
+  <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-px">
+    <div className="outline-border bg-background p-6 outline-1">Cell</div>
+    <div className="outline-border bg-background p-6 outline-1">Cell</div>
+    <div className="outline-border bg-background p-6 outline-1">Cell</div>
+  </div>
+</div>
+```
+
+The wrapper draws the rounded frame, `overflow-hidden` clips away the cells' perimeter outlines, and the cells are left supplying only the interior lines. Note there is no `p-px` on the grid here — the wrapper draws the frame now.
+
+Required:
+
+- `bg-*` on every cell — without it nothing gets clipped at the corners and content pokes past the curve.
+- `overflow-hidden` on the wrapper — this is what removes the doubled outer line.
+
+Do not use Pattern B when the grid contains `sticky` headers, dropdowns, tooltips, or any child that needs to escape the container — `overflow-hidden` will clip them. In that case use Pattern A and accept square corners, or round only the four corner cells directly (which reintroduces `nth-child` math, so treat it as a last resort).
+
+### Do not do this
+
+```tsx
+<div className="bg-border grid grid-cols-3 gap-px">
+  <div className="bg-background p-6">Cell</div>
+</div>
+```
+
+Painting the container in the line colour and letting it show through the gaps looks correct only while the last row is full. As soon as the item count is not a multiple of the column count, the leftover cells have no element to cover them and the container colour shows through as a solid block of line-colour. Since column count changes at every breakpoint, this will break on some screen size regardless of the item count.
+
+### Quick reference
+
+| Need                           | Use                                  |
+| ------------------------------ | ------------------------------------ |
+| Square corners                 | Pattern A                            |
+| Rounded corners                | Pattern B                            |
+| Sticky or overflowing children | Pattern A                            |
+| Any column count / responsive  | Both — no breakpoint variants needed |
+
+## 10. No comments
 
 Do not add comments of any kind to the code — no `//`, no `/* */`, no JSX `{/* */}`. Code should read on its own.
 
-## 10. Figma layer-name directives
+## 11. Figma layer-name directives
 
 Layer names in Figma carry build instructions inside double square brackets. Read them and act on them — the bracketed token is an instruction, not part of the layer's content, so never render it as text or use it in a class name or `id`.
 
