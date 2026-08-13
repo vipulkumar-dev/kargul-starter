@@ -161,25 +161,7 @@ function ExampleSection() {
   return (
     <section id="section-name" className="relative z-0">
       <div className="px-global py-section-md">
-        <div className="max-w-global mx-auto">
-          <div className="flex flex-col items-center gap-4">
-            <h1 className="max-w-[10em] text-center">Example Section</h1>
-            <p className="max-w-[24em] text-center">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Iste,
-              neque laboriosam id harum consequatur quidem dolorem aperiam sit
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <Button variant="primary" size="md">
-              Book a Demo
-            </Button>
-
-            <Button variant="secondary" size="md">
-              Learn More
-            </Button>
-          </div>
-        </div>
+        <div className="max-w-global mx-auto">[other code]</div>
       </div>
     </section>
   );
