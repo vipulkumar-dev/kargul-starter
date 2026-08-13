@@ -213,22 +213,13 @@ This keeps line length consistent as the global font sizes scale across breakpoi
 
 Use Tailwind utilities for everything. No inline `style` objects, no CSS modules, no styled-components. Global tokens and base styles belong in `app/globals.css`.
 
-## 8. Use `divide` for stacked borders
+## 8. Borders between items
 
-For one-dimensional lists or stacks that need separators between items, use Tailwind's `divide-*` utilities instead of putting a border on each child. For two-dimensional grids, use rule 9 instead — `divide-*` can't handle wrapping columns.
-
-```tsx
-<div className="divide-border flex flex-col divide-y">
-  <div className="py-4">Item one</div>
-  <div className="py-4">Item two</div>
-</div>
-```
-
-## 9. Grid borders
-
-How to draw 1px dividing lines between grid items.
+How to draw 1px dividing lines between items — grids, and stacked lists alike.
 
 **Never** use `nth-child` math to add or strip borders per position. It has to be rewritten at every breakpoint and silently breaks when the column count changes. Use one of the two patterns below.
+
+A plain stacked list is just Pattern A with a single column, so the same two patterns cover every case.
 
 ### Pattern A — square corners
 
@@ -288,7 +279,7 @@ Painting the container in the line colour and letting it show through the gaps l
 | Sticky or overflowing children | Pattern A                            |
 | Any column count / responsive  | Both — no breakpoint variants needed |
 
-## 10. SVGs
+## 9. SVGs
 
 **Prefer `<Image />`.** Render an SVG through `next/image` using its **public path as a string** — not a static import.
 
@@ -319,7 +310,7 @@ How SVG handling behaves in this project:
 - Files live in `public/assets/images/…` per rule 2.
 - Decorative SVGs get `alt=""` on `<Image />`, or `aria-hidden` when inline.
 
-## 11. Easing
+## 10. Easing
 
 GSAP's power eases are defined once and available to both CSS and Framer Motion. **Never hardcode a `cubic-bezier()` or a raw bezier array in a component.**
 
@@ -380,11 +371,127 @@ import { ease } from "@/lib/easings";
 - The `@theme` block is `static`, so all twelve `--ease-power*` variables are always emitted to `:root` — usable in arbitrary values (`[transition-timing-function:var(--ease-power2-out)]`) and inline `animate` styles, not just via the utilities.
 - Adding a curve means adding it in **both** places, with the same numbers, so CSS and Motion stay in sync.
 
-## 12. No comments
+## 11. The navbar and hero must paint instantly
+
+Both are in the viewport the moment the page loads, so anything they fetch over the network is a frame the user spends staring at nothing. **Everything the first screen needs gets embedded in the HTML document itself.** This rule applies to the navbar and the hero only.
+
+### 1. SVGs go inline
+
+The logo and nav icons render as SVGR components (rule 9), never `<Image />` — inline SVG ships with the document and paints on the first frame.
+
+```tsx
+import Logo from "@/public/assets/images/_common/logo.svg";
+
+<Logo className="h-8 w-auto" />;
+```
+
+### 2. Hero images become AVIF data URIs
+
+Convert to AVIF first — any other format is too heavy to embed — then inline it.
+
+```bash
+npm run to:avif -- public/assets/images/home/hero/hero.png --width 1600 --quality 45
+```
+
+The script writes `hero.avif` next to the source and prints what it costs as base64 so you can judge it before inlining. Then:
+
+```tsx
+import Image from "next/image";
+import { inlineAsset } from "@/lib/inline-asset";
+
+const hero = inlineAsset("/assets/images/home/hero/hero.avif");
+
+<Image src={hero} alt="" width={1600} height={900} priority />;
+```
+
+`next/image` detects the `data:` src and skips optimisation, so the bytes land in the HTML exactly as encoded.
+
+### 3. Video posters are data URIs
+
+The poster shows immediately and stays until the video is ready. `npm run extract:avif` pulls the first frame from every `.webm` under `public/` and converts it to AVIF next to the video (rule 2).
+
+```tsx
+<Video
+  src="/assets/videos/home/hero/hero-loop.webm"
+  poster={inlineAsset("/assets/videos/home/hero/hero-loop-frame.avif")}
+/>
+```
+
+### 4. Rive and Lottie show a still first
+
+Paint the inlined AVIF, then swap it for the animation on the library's load callback — `onLoad` for Rive, `onDOMLoaded` for `lottie-react`. Never leave an empty box while the runtime downloads.
+
+```tsx
+<div className="relative">
+  {!loaded && (
+    <Image src={fallback} alt="" fill className="object-cover" unoptimized />
+  )}
+  <Rive src="/assets/rive/home/hero/hero.riv" onLoad={() => setLoaded(true)} />
+</div>
+```
+
+### Don't overdo it
+
+These tricks buy a fast first paint; used everywhere they make the page slower. Inlined bytes can't be cached separately, are re-sent on every navigation to that page, and delay HTML parse.
+
+- Only what is visible on first paint. Everything below the fold stays a normal file request through `<Image />`.
+- `inlineAsset()` warns past 24KB raw; `to:avif` warns past 32KB of base64. Lower `--quality` or `--width` instead of ignoring it.
+- `inlineAsset()` reads from disk at build time, so it only works in server components. Call it in the section (or page) and pass the string down as a prop to any client child.
+
+## 12. Responsive layout
+
+Most sections are text-driven and just follow the general layout from rule 3 — the padding and max-width wrappers plus the global type scale handle every breakpoint. Don't set fixed heights, don't size a whole section in `vw`, and don't rebuild the desktop composition separately for mobile.
+
+Image-driven layouts are the exception, and there are three patterns.
+
+### The image sets the box → aspect-ratio wrapper
+
+When the layout's proportions come from an image, the **wrapper** owns the ratio and the image fills it. Never give the image a fixed pixel height.
+
+```tsx
+<div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl md:aspect-video">
+  <Image src={cover} alt="" fill className="object-cover" />
+</div>
+```
+
+Only the wrapper knows the ratio, so it can change per breakpoint (`aspect-square md:aspect-4/3`) without touching the image.
+
+### The image escapes the box → `absolute` inside a `relative` wrapper
+
+When artwork bleeds past the content column, the wrapper stays the layout anchor and the image is positioned out of it, so it never pushes siblings around.
+
+```tsx
+<div className="relative">
+  <h2 className="max-w-[12em]">Heading</h2>
+  <Image
+    src={glow}
+    alt=""
+    className="pointer-events-none absolute -top-20 -right-40 w-[60vw] max-w-none md:w-[32rem]"
+  />
+</div>
+```
+
+- The parent needs `relative`; the page `main` already carries `overflow-x-clip` so the bleed can't create horizontal scroll.
+- Decorative overflow gets `alt=""` and `pointer-events-none`.
+- `max-w-none` when the image has to exceed its container width.
+
+### Two sections overlap → negative margin
+
+When the design collapses one section into the one above, pull the lower section up and give it a stacking context.
+
+```tsx
+<section id="stats" className="relative z-10 -mt-24 md:-mt-40">
+```
+
+- Always pair the negative margin with `relative z-*` so the pulled section paints above the previous one.
+- Keep the pull responsive — the overlap is usually smaller or zero on mobile.
+- Never fake it with a fixed height on the section above or by absolutely positioning a whole section; both break the moment the content wraps differently.
+
+## 13. No comments
 
 Do not add comments of any kind to the code — no `//`, no `/* */`, no JSX `{/* */}`. Code should read on its own.
 
-## 13. Figma layer-name directives
+## 14. Figma layer-name directives
 
 Layer names in Figma carry build instructions inside double square brackets. Read them and act on them — the bracketed token is an instruction, not part of the layer's content, so never render it as text or use it in a class name or `id`.
 
