@@ -288,11 +288,42 @@ Painting the container in the line colour and letting it show through the gaps l
 | Sticky or overflowing children | Pattern A                            |
 | Any column count / responsive  | Both — no breakpoint variants needed |
 
-## 10. No comments
+## 10. SVGs
+
+**Prefer `<Image />`.** Render an SVG through `next/image` using its **public path as a string** — not a static import.
+
+```tsx
+<Image
+  src="/assets/images/home/hero/badge.svg"
+  alt="Verified"
+  width={24}
+  height={24}
+/>
+```
+
+Go inline only when the graphic actually needs CSS — `currentColor`, hover / `group-hover`, animation, or a token-driven gradient. Then import the file and render it as a component. SVGR is already wired up in `next.config.ts`, so the markup stays clean.
+
+```tsx
+import ArrowIcon from "@/public/assets/images/_common/arrow.svg";
+
+<ArrowIcon className="size-4 transition-colors group-hover:text-black" />;
+```
+
+**Never paste raw `<svg>` markup into a component.** If it renders inline, it comes from an imported `.svg` file.
+
+How SVG handling behaves in this project:
+
+- Every `.svg` import is transformed by SVGR into a React component (`next.config.ts` → `turbopack.rules`). It is **not** a `StaticImageData`, so `<Image src={ArrowIcon} />` does not work — that's why `<Image />` takes the path string instead.
+- SVGR runs with `icon: true`, so the output is `<svg width="1em" height="1em" viewBox="…">`. Size it with a Tailwind class (`size-4`, `h-6 w-6`) — CSS beats the attributes — or by setting a font-size.
+- Colours are **not** rewritten automatically. For `currentColor` to work, the `.svg` file itself must use `fill="currentColor"` / `stroke="currentColor"`. Fix the exported file once; don't wrap it in a component to patch colours.
+- Files live in `public/assets/images/…` per rule 2.
+- Decorative SVGs get `alt=""` on `<Image />`, or `aria-hidden` when inline.
+
+## 11. No comments
 
 Do not add comments of any kind to the code — no `//`, no `/* */`, no JSX `{/* */}`. Code should read on its own.
 
-## 11. Figma layer-name directives
+## 12. Figma layer-name directives
 
 Layer names in Figma carry build instructions inside double square brackets. Read them and act on them — the bracketed token is an instruction, not part of the layer's content, so never render it as text or use it in a class name or `id`.
 
