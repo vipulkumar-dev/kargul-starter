@@ -456,6 +456,8 @@ When the layout's proportions come from an image, the **wrapper** owns the ratio
 
 Only the wrapper knows the ratio, so it can change per breakpoint (`aspect-square md:aspect-4/3`) without touching the image.
 
+This is exactly what `Asset` builds from its `width`/`height` props — see rule 15. Reach for the raw wrapper only when the box holds something that isn't an asset.
+
 ### The image escapes the box → `absolute` inside a `relative` wrapper
 
 When artwork bleeds past the content column, the wrapper stays the layout anchor and the image is positioned out of it, so it never pushes siblings around.
@@ -592,3 +594,142 @@ Notes:
 - PhotoSwipe is code-split — the gallery only downloads it on first hover/focus/click, so an unused gallery costs nothing.
 - Multiple galleries on one page are fine; give each its own `id`.
 - Images in separate `LightboxGallery` wrappers never navigate into each other.
+
+## 15. Always use the Asset component
+
+Every image, video, Rive and Lottie on the site renders through one component: `Asset`, from `@/components/_ui/asset`. Never reach for a bare `<Image />`, `<video>`, `<Video />`, a Rive canvas or a Lottie player in a section — pick the `type` and let `Asset` build the box.
+
+```tsx
+import Asset from "@/components/_ui/asset";
+
+<Asset
+  type="image"
+  src="/assets/images/home/projects/cover.png"
+  alt="Brand identity system"
+  width={1600}
+  height={1200}
+  className="rounded-3xl"
+/>;
+```
+
+`Asset` is a server component and only pulls a client boundary in for the types that need one, so it can be rendered straight from a section.
+
+### The four types
+
+Each type declares exactly what that medium needs. TypeScript enforces it — a `video` without a `poster` will not compile.
+
+| `type`   | Required                                  | Optional                                              |
+| -------- | ----------------------------------------- | ----------------------------------------------------- |
+| `image`  | `src`, `alt`, `width`, `height`           | `sizes`, `quality`, `priority`, `loading`             |
+| `video`  | `src`, `poster`, `width`, `height`        | `mobileSrc`, `alt`                                    |
+| `rive`   | `src`, `poster`, `alt`, `width`, `height` | `artboard`, `animations`, `stateMachines`, `autoplay` |
+| `lottie` | `src`, `poster`, `alt`, `width`, `height` | `loop`, `autoplay`                                    |
+
+Every type also takes `fit`, `className` and `mediaClassName`.
+
+`poster` is the **first frame** of the video / Rive / Lottie, and it is required because the box must never be empty while a runtime downloads (rule 11). `npm run extract:avif` pulls the first frame out of every `.webm` under `public/`; export a still from Rive and Lottie by hand. The poster paints immediately and cross-fades out on the runtime's load event.
+
+```tsx
+<Asset
+  type="video"
+  src="/assets/videos/home/hero/hero-loop.webm"
+  poster="/assets/videos/home/hero/hero-loop-frame.avif"
+  width={1920}
+  height={1080}
+/>
+```
+
+```tsx
+<Asset
+  type="rive"
+  src="/assets/rive/home/hero/hero-scroll.riv"
+  poster="/assets/rive/home/hero/hero-scroll-frame.avif"
+  alt="Scroll indicator"
+  stateMachines="Scroll"
+  width={400}
+  height={400}
+/>
+```
+
+The Rive runtime and the Lottie player are both behind `next/dynamic`, so a page with no `rive`/`lottie` asset never downloads them.
+
+### `width` and `height` are the ratio, not a size
+
+They are never applied as pixels. `Asset` turns them into the wrapper's `aspect-ratio` and stretches the media across it absolutely, which is rule 12's aspect-ratio pattern with the wiring already done. Pass the asset's intrinsic dimensions and let the layout decide the width.
+
+```tsx
+<div className="grid gap-4 md:grid-cols-2">
+  <Asset type="image" src={cover} alt="Cover" width={4} height={3} />
+</div>
+```
+
+Need a different ratio than the file's? Put an `aspect-*` utility on `className` — it wins over the computed one, and it can change per breakpoint.
+
+```tsx
+<Asset
+  type="image"
+  src={cover}
+  alt="Cover"
+  width={16}
+  height={9}
+  className="aspect-square md:aspect-video"
+/>
+```
+
+### `className` is the box, `mediaClassName` is the media
+
+`className` styles the wrapper — ratio, radius, border, shadow, grid placement. `mediaClassName` reaches the `img` / `video` / `canvas` inside it. `fit` (`cover` by default, plus `contain` / `fill` / `none`) sets `object-fit` and its Rive/Lottie equivalents in one go, so don't hand-write `object-*`.
+
+```tsx
+<Asset
+  type="image"
+  src={logo}
+  alt="Client logo"
+  width={200}
+  height={80}
+  fit="contain"
+  className="rounded-xl bg-white p-6"
+  mediaClassName="ease-power3-in-out transition-transform duration-500 group-hover:scale-105"
+/>
+```
+
+### Inline SVG and data URIs go through it too
+
+`src` on an `image` accepts three shapes, and `Asset` picks the right renderer:
+
+- **A public path** (`"/assets/images/…"`) — rendered with `next/image`. `.svg` paths skip the optimiser automatically.
+- **A data URI** from `inlineAsset()` — rendered with `next/image`, unoptimised, so the bytes land in the HTML exactly as encoded (rule 11).
+- **An imported SVG** — SVGR gives back a component, and `Asset` renders it inline, which is what makes `currentColor`, `group-hover:` and animation work (rule 9).
+
+```tsx
+import { inlineAsset } from "@/lib/inline-asset";
+import ArrowIcon from "@/public/assets/images/_common/arrow.svg";
+
+<Asset
+  type="image"
+  src={inlineAsset("/assets/images/home/hero/hero.avif")}
+  alt=""
+  width={1600}
+  height={900}
+  priority
+/>;
+
+<Asset
+  type="image"
+  src={ArrowIcon}
+  alt=""
+  width={1}
+  height={1}
+  className="size-4"
+  mediaClassName="transition-colors group-hover:text-black"
+/>;
+```
+
+`inlineAsset()` reads from disk at build time, so keep the call in the section and pass the string down — same rule as before.
+
+### The exceptions
+
+- `[[lightbox-image]]` still uses `LightboxImage` (rule 14) — it needs the anchor and the PhotoSwipe data attributes.
+- A decorative image that bleeds out of its box has no box, so it stays a plain absolutely positioned `<Image />` (rule 12).
+
+Everything else is an `Asset`. Keeping one entry point is also what makes a CMS-driven asset drop in later without touching a single section — the shape a section receives is already `{ type, src, poster, alt, width, height }`.
